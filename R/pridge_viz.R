@@ -1,6 +1,10 @@
 library(scoutR)
 library(tidyverse)
 
+#################################
+#### Combining yearwise data ####
+#################################
+
 #######################
 #### pRidge vs OPR ####
 #######################
@@ -19,7 +23,7 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
          subtitle = "By cross-validated MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("reference/pridge_pct_imp_vs_opr.png")
+ggsave("output/pridge_pct_imp_vs_opr.png")
 
 #######################
 #### pRidge vs EPA ####
@@ -40,4 +44,4 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
          subtitle = "By next-match-prediction MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("reference/pridge_pct_imp_vs_epa.png")
+ggsave("output/pridge_pct_imp_vs_epa.png")
