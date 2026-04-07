@@ -23,7 +23,7 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
          subtitle = "By cross-validated MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_vs_opr_byyear.png")
+ggsave("output/pridge_vs_opr_byyear.png", width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
     geom_boxplot(width = 0.6) +
@@ -35,7 +35,7 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
          subtitle = "By cross-validated MSE per event",
          x = "Week", y = "% Improvement")
 
-ggsave("output/pridge_vs_opr_byweek.png")
+ggsave("output/pridge_vs_opr_byweek.png", width = 6, height = 6, units = "in")
 
 #######################
 #### pRidge vs EPA ####
@@ -56,7 +56,7 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
          subtitle = "By next-match-prediction MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_vs_epa_byyear.png")
+ggsave("output/pridge_vs_epa_byyear.png", width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
     geom_boxplot(width = 0.6) +
@@ -69,4 +69,4 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
          subtitle = "By next-match-prediction MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_vs_epa_byweek.png")
+ggsave("output/pridge_vs_epa_byweek.png", width = 6, height = 6, units = "in")
