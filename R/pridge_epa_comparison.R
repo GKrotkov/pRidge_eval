@@ -58,7 +58,7 @@ get_epa_coefs <- function(epa_progression, event_key, i) {
     epa_coefs <- epa_progression |>
         mutate(match = as.numeric(substr(
             match, nchar(paste0(event_key, "_qm")) + 1, nchar(match)))) |>
-        filter(match < i) |> # use matches before (i) only
+        filter(match <= i) |> # inclusive because we're using pre_epa
         arrange(team, match) |>
         group_by(team) |>
         summarize(coef = last(pre_epa))
@@ -118,7 +118,7 @@ pridge_epa_pct_imp <- function(event_key){
     return(pct_imp)
 }
 
-YEAR <- 2016
+YEAR <- 2025
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
