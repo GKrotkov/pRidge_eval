@@ -19,11 +19,23 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
     geom_hline(yintercept = 0, lty = 2) +
     theme_bw() +
     scale_y_continuous(labels = scales::percent) +
-    labs(title = "pRidge % improvement against OPR baseline",
+    labs(title = "pRidge % improvement over OPR by year",
          subtitle = "By cross-validated MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_pct_imp_vs_opr.png")
+ggsave("output/pridge_vs_opr_byyear.png")
+
+ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
+    geom_boxplot(width = 0.6) +
+    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_hline(yintercept = 0, lty = 2) +
+    theme_bw() +
+    scale_y_continuous(labels = scales::percent) +
+    labs(title = "pRidge % improvement over OPR by competition week",
+         subtitle = "By cross-validated MSE per event",
+         x = "Week", y = "% Improvement")
+
+ggsave("output/pridge_vs_opr_byweek.png")
 
 #######################
 #### pRidge vs EPA ####
@@ -40,8 +52,21 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
     theme_bw() +
     scale_y_continuous(breaks = seq(-0.6, 0.7, by = 0.2),
                        labels = scales::percent) +
-    labs(title = "pRidge % improvement against EPA baseline",
+    labs(title = "pRidge % improvement over EPA by year",
          subtitle = "By next-match-prediction MSE per event",
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_pct_imp_vs_epa.png")
+ggsave("output/pridge_vs_epa_byyear.png")
+
+ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
+    geom_boxplot(width = 0.6) +
+    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_hline(yintercept = 0, lty = 2) +
+    theme_bw() +
+    scale_y_continuous(breaks = seq(-0.6, 0.7, by = 0.2),
+                       labels = scales::percent) +
+    labs(title = "pRidge % improvement over EPA by competition week",
+         subtitle = "By next-match-prediction MSE per event",
+         x = "Year", y = "% Improvement")
+
+ggsave("output/pridge_vs_epa_byweek.png")
