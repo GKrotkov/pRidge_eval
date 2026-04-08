@@ -51,7 +51,7 @@ get_pridge_coefs <- function(design, response, priors, n_cores = 1){
         X = design, y = response, lambda = lambda_star, beta_0 = priors
     )
     pridge_coefs <- round(pridge_coefs, 2)
-    return(pridge_coefs)
+    return(list(coefs = pridge_coefs, lambda = lambda_star))
 }
 
 get_epa_coefs <- function(epa_progression, event_key, i) {
@@ -88,6 +88,8 @@ pridge_epa_pct_imp <- function(event_key){
     result <- matrix(NA, nrow = length(lo:hi), ncol = 3)
     colnames(result) <- c("match_number", "pridge_error", "epa_error")
 
+    lambdas <- numeric(length(lo:hi))
+
     # fit on matches up until (i - 1), predict on match (i)
     for (i in lo:hi){
         # matrix indexing trick to interleave red and blue matches
@@ -97,7 +99,9 @@ pridge_epa_pct_imp <- function(event_key){
         response <- full_response[ridx]
 
         # compute coefs for pridge and EPA on training data
-        pridge_coefs <- get_pridge_coefs(design, response, priors)
+        pridge_result <- get_pridge_coefs(design, response, priors)
+        pridge_coefs <- pridge_result$coefs
+        lambdas[i - lo + 1] <- pridge_result$lambda
         epa_coefs <- get_epa_coefs(epa_progression, event_key, i)
 
         # predict on match (i)
@@ -115,10 +119,19 @@ pridge_epa_pct_imp <- function(event_key){
     # as a pct of EPA MSE
     pct_imp <- ((epa_mse - pridge_mse) / epa_mse) * 100
 
-    return(data.frame(pridge_mse, epa_mse, pct_imp))
+    result <- data.frame(
+        pridge_mse, epa_mse, pct_imp,
+        lambda_mean = mean(lambdas, na.rm = TRUE),
+        lambda_median = median(lambdas, na.rm = TRUE),
+        lambda_sd = sd(lambdas, na.rm = TRUE),
+        lambda_max = max(lambdas, na.rm = TRUE),
+        lambda_min = min(lambdas, na.rm = TRUE)
+    )
+
+    return(scoutR:::round_numerics(result))
 }
 
-YEAR <- 2024
+YEAR <- 2023
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
@@ -140,7 +153,9 @@ results_list <- foreach(
     tryCatch(
         {pridge_epa_pct_imp(key)},
         error = function(e){
-            data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA)
+            data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
+                       lambda_mean = NA, lambda_median = NA, lambda_sd = NA,
+                       lambda_max = NA, lambda_min = NA)
         }
     )
 }
