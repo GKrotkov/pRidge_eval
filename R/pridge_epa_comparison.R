@@ -115,10 +115,10 @@ pridge_epa_pct_imp <- function(event_key){
     # as a pct of EPA MSE
     pct_imp <- ((epa_mse - pridge_mse) / epa_mse) * 100
 
-    return(pct_imp)
+    return(data.frame(pridge_mse, epa_mse, pct_imp))
 }
 
-YEAR <- 2025
+YEAR <- 2023
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
@@ -139,7 +139,9 @@ results_list <- foreach(
 ) %dopar% {
     tryCatch(
         {pridge_epa_pct_imp(key)},
-        error = function(e){conditionMessage(e)}
+        error = function(e){
+            data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA)
+        }
     )
 }
 
@@ -148,10 +150,15 @@ stopCluster(cl)
 finish <- Sys.time()
 execution_time <- finish - start
 
-# coerce results to numeric intentionally to replace strings with NA
-result <- qualifier_events |>
-    mutate(pct_imp = as.numeric(unlist(results_list))) |>
-    select(key, pct_imp, year, week, everything())
+result <- results_list |>
+    bind_rows() |>
+    # coerce MSEs & pct_imp to numeric to replace strings with NA
+    mutate(key = event_keys,
+           pct_imp = as.numeric(pct_imp),
+           pridge_mse = as.numeric(pridge_mse),
+           epa_mse = as.numeric(epa_mse)) |>
+    full_join(qualifier_events, by = "key") |>
+    select(key, year, week, pct_imp, pridge_mse, epa_mse, everything())
 
 save(result, execution_time,
      file = paste0("data/pridge_vs_epa/", "pct_improvement_", YEAR, ".rda"))
