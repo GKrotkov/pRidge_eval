@@ -118,7 +118,7 @@ pridge_epa_pct_imp <- function(event_key){
     return(data.frame(pridge_mse, epa_mse, pct_imp))
 }
 
-YEAR <- 2023
+YEAR <- 2016
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
@@ -160,5 +160,5 @@ result <- results_list |>
     full_join(qualifier_events, by = "key") |>
     select(key, year, week, pct_imp, pridge_mse, epa_mse, everything())
 
-save(result, execution_time,
+save(result, execution_time, n_cores,
      file = paste0("data/pridge_vs_epa/", "pct_improvement_", YEAR, ".rda"))
