@@ -4,6 +4,7 @@ rm(list = ls())
 library(scoutR)
 library(foreach)
 library(doParallel)
+library(dplyr)
 
 # given a numeric vector of coefficients, compute the mse on the test set
 coefs_mse <- function(design, response, coefs){
