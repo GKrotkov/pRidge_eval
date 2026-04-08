@@ -82,7 +82,7 @@ pridge_opr_pct_improvement <- function(event_key, k = 4){
 years <- setdiff(2016:2025, 2020:2021)
 
 qualifier_events <- lapply(years, events, official = TRUE) |>
-    bind_rows() |>
+    dplyr::bind_rows() |>
     dplyr::filter(event_type %in% c(0, 1))
 
 event_keys <- qualifier_events |>
