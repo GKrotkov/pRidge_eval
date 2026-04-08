@@ -118,7 +118,7 @@ pridge_epa_pct_imp <- function(event_key){
     return(data.frame(pridge_mse, epa_mse, pct_imp))
 }
 
-YEAR <- 2018
+YEAR <- 2024
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
