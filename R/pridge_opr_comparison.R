@@ -1,4 +1,5 @@
 # Computing Prior Ridge percent improvement over OPR in terms of nested CV MSE
+# Compares for a range of years of interest
 rm(list = ls())
 library(scoutR)
 library(foreach)
@@ -78,9 +79,10 @@ pridge_opr_pct_improvement <- function(event_key, k = 4){
 #### Data ####
 ##############
 
-YEAR <- 2023
+years <- setdiff(2016:2025, 2020:2021)
 
-qualifier_events <- events(YEAR, official = TRUE) |>
+qualifier_events <- lapply(years, events, official = TRUE) |>
+    bind_rows() |>
     dplyr::filter(event_type %in% c(0, 1))
 
 event_keys <- qualifier_events |>
@@ -123,4 +125,6 @@ result <- results_list |>
            lambda_opt, opr_mse, everything())
 
 save(result, execution_time, n_cores,
-     file = paste0("data/pridge_vs_opr/", "pct_improvement_", YEAR, ".rda"))
+     file = paste0("data/pridge_vs_opr/", "pct_imp_",
+                   years[1], "_to_", tail(years, 1),
+                   ".rda"))
