@@ -126,7 +126,7 @@ qualifier_events <- events(YEAR, official = TRUE) |>
 event_keys <- qualifier_events |>
     dplyr::pull(key)
 
-n_cores <- parallel::detectCores() - 1
+n_cores <- parallel::detectCores() %/% 2
 cl <- makeCluster(n_cores)
 registerDoParallel(cl)
 
