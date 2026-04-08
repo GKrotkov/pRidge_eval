@@ -1,6 +1,4 @@
 # Compare EPA to prior ridge using Statbotics API calls
-# For a single year
-
 rm(list = ls()) # clear namespace (mostly for debugging)
 library(scoutR) # devtools::install_github("gkrotkov/scoutR")
 library(tidyverse)
@@ -133,9 +131,10 @@ pridge_epa_pct_imp <- function(event_key){
     return(scoutR:::round_numerics(result))
 }
 
-YEAR <- 2023
+years <- setdiff(2016:2025, 2020:2021)
 
-qualifier_events <- events(YEAR, official = TRUE) |>
+qualifier_events <- lapply(years, events, official = TRUE) |>
+    bind_rows() |>
     dplyr::filter(event_type %in% c(0, 1))
 
 event_keys <- qualifier_events |>
@@ -178,4 +177,6 @@ result <- results_list |>
     select(key, year, week, pct_imp, pridge_mse, epa_mse, everything())
 
 save(result, execution_time, n_cores,
-     file = paste0("data/pridge_vs_epa/", "pct_improvement_", YEAR, ".rda"))
+     file = paste0("data/pridge_vs_opr/", "pct_imp_",
+                   years[1], "_to_", tail(years, 1),
+                   ".rda"))
