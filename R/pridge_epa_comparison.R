@@ -118,7 +118,7 @@ pridge_epa_pct_imp <- function(event_key){
     return(data.frame(pridge_mse, epa_mse, pct_imp))
 }
 
-YEAR <- 2016
+YEAR <- 2018
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
@@ -126,7 +126,7 @@ qualifier_events <- events(YEAR, official = TRUE) |>
 event_keys <- qualifier_events |>
     dplyr::pull(key)
 
-n_cores <- parallel::detectCores() %/% 2
+n_cores <- parallel::detectCores() - 1
 cl <- makeCluster(n_cores)
 registerDoParallel(cl)
 
