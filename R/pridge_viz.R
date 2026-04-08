@@ -67,6 +67,6 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
                        labels = scales::percent) +
     labs(title = "pRidge % improvement over EPA by competition week",
          subtitle = "By next-match-prediction MSE per event",
-         x = "Year", y = "% Improvement")
+         x = "Week", y = "% Improvement")
 
 ggsave("output/pridge_vs_epa_byweek.png", width = 6, height = 6, units = "in")
