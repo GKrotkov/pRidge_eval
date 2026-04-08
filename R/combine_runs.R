@@ -2,6 +2,7 @@
 #### Combining yearwise data ####
 #################################
 
+rm(list = ls())
 library(dplyr)
 library(purrr)
 
@@ -20,7 +21,7 @@ result <- map_dfr(rda_files, function(file) {
     result
 })
 
-save("data/pridge_vs_opr/pct_imp_2016_to_2025.rda")
+save(result, file = "data/pridge_vs_opr/pct_imp_2016_to_2025.rda")
 
 #############
 #### EPA ####
@@ -37,4 +38,4 @@ result <- map_dfr(rda_files, function(file) {
     result
 })
 
-save("data/pridge_vs_epa/pct_imp_2016_to_2025.rda")
+save(result, file = "data/pridge_vs_epa/pct_imp_2016_to_2025.rda")
