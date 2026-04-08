@@ -1,0 +1,1 @@
+- Update pipeline to pull data from the API once and then query that locally rather than slamming TBA's servers over and over.
