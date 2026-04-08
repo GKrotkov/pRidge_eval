@@ -122,5 +122,5 @@ result <- results_list |>
     select(key, year, week, pct_imp, pridge_mse,
            lambda_opt, opr_mse, everything())
 
-save(result, execution_time,
+save(result, execution_time, n_cores,
      file = paste0("data/pridge_vs_opr/", "pct_improvement_", YEAR, ".rda"))
