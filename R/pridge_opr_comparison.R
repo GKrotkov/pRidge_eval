@@ -70,17 +70,15 @@ pridge_opr_pct_improvement <- function(event_key, k = 4){
     opr_mse    <- mean(sapply(fold_results, function(x) x$opr_mse))
     lambda_opt <- mean(sapply(fold_results, function(x) x$lambda_opt))
 
-    result <- ((opr_mse - pridge_mse) / opr_mse) * 100
-    # encoding the lambda_opt values in the name of the return vector
-    names(result) <- lambda_opt
-    return(result)
+    pct_imp <- ((opr_mse - pridge_mse) / opr_mse) * 100
+    return(data.frame(pct_imp, pridge_mse, opr_mse, lambda_opt))
 }
 
 ##############
 #### Data ####
 ##############
 
-YEAR <- 2017
+YEAR <- 2023
 
 qualifier_events <- events(YEAR, official = TRUE) |>
     dplyr::filter(event_type %in% c(0, 1))
@@ -105,7 +103,10 @@ results_list <- foreach(
 ) %dopar% {
     tryCatch(
         {pridge_opr_pct_improvement(key)},
-        error = function(e){NA}
+        error = function(e){
+            data.frame(pct_imp = NA, pridge_mse = NA,
+                       opr_mse = NA, lambda_opt = NA)
+        }
     )
 }
 
@@ -114,21 +115,12 @@ stopCluster(cl)
 finish <- Sys.time()
 execution_time <- finish - start
 
-# Unpack results (same structure as before)
-pct_imp    <- sapply(results_list, function(x) if (length(x) == 1 && is.na(x)) NA else as.numeric(x))
-lambda_opts <- sapply(results_list, function(x) if (length(x) == 1 && is.na(x)) NA else as.numeric(names(x)))
-names(pct_imp) <- event_keys
-names(lambda_opts) <- event_keys
-
-round(mean(pct_imp, na.rm = TRUE), 2)
-
-result <- data.frame(
-    pct_imp = pct_imp,
-    lambda_opt = lambda_opts,
-    key = event_keys
-)
-
-result <- merge(result, qualifier_events, by = "key")
+result <- results_list |>
+    bind_rows() |>
+    mutate(key = event_keys) |>
+    full_join(qualifier_events, by = "key") |>
+    select(key, year, week, pct_imp, pridge_mse,
+           lambda_opt, opr_mse, everything())
 
 save(result, execution_time,
      file = paste0("data/pridge_vs_opr/", "pct_improvement_", YEAR, ".rda"))
