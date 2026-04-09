@@ -132,6 +132,7 @@ pridge_epa_pct_imp <- function(event_key){
 }
 
 years <- setdiff(2016:2025, 2020:2021)
+years <- setdiff(2018:2025, 2020:2021)
 
 qualifier_events <- lapply(years, events, official = TRUE) |>
     bind_rows() |>
