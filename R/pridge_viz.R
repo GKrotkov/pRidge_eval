@@ -1,5 +1,6 @@
 library(scoutR)
 library(tidyverse)
+library(ggbeeswarm)
 
 #######################
 #### pRidge vs OPR ####
@@ -13,8 +14,9 @@ result <- result |>
     filter(year >= 2016)
 
 ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
-    geom_boxplot(width = 0.6) +
-    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
+    ggbeeswarm::geom_quasirandom(alpha = 0.6, shape = 21,
+                                 size = 1, width = 0.4) +
     geom_hline(yintercept = 0, lty = 2) +
     coord_flip() +
     theme_bw() +
@@ -27,8 +29,9 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
 ggsave("output/pridge_vs_opr_byyear.png", width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
-    geom_boxplot(width = 0.6) +
-    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
+    ggbeeswarm::geom_quasirandom(alpha = 0.6, shape = 21,
+                                 size = 1, width = 0.4) +
     geom_hline(yintercept = 0, lty = 2) +
     coord_flip() +
     theme_bw() +
@@ -52,8 +55,9 @@ result <- result |>
     filter(year >= 2016)
 
 ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
-    geom_boxplot(width = 0.6) +
-    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
+    ggbeeswarm::geom_quasirandom(alpha = 0.6, shape = 21,
+                                 size = 1, width = 0.4) +
     geom_hline(yintercept = 0, lty = 2) +
     coord_flip() +
     theme_bw() +
@@ -67,8 +71,9 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
 ggsave("output/pridge_vs_epa_byyear.png", width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
-    geom_boxplot(width = 0.6) +
-    geom_violin(fill = "darkred", alpha = 0.8, width = 0.6) +
+    geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
+    ggbeeswarm::geom_quasirandom(alpha = 0.6, shape = 21,
+                                 size = 1, width = 0.4) +
     geom_hline(yintercept = 0, lty = 2) +
     coord_flip() +
     theme_bw() +
