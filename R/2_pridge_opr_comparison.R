@@ -60,6 +60,9 @@ cv_fold <- function(fold, fold_ids, matches, priors){
 # Compute Pridge improvement % over OPR in terms of MSE
 # Now uses pre-loaded event data instead of API calls
 pridge_opr_pct_improvement <- function(event_key, event_data_entry){
+    # Setting seed here so it takes hold inside the parallelized runs
+    set.seed(449)
+
     # Extract required data from cached structure
     matches <- event_data_entry$matches
     team_events <- event_data_entry$team_events
@@ -111,8 +114,6 @@ load_year_data <- function(year) {
 ##############
 #### Data ####
 ##############
-
-set.seed(449)
 
 years <- setdiff(2016:2025, 2020:2021)
 
