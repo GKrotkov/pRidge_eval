@@ -268,8 +268,7 @@ if (!dir.exists(output_dir)) {
 
 save(result, execution_time, n_cores,
      file = paste0(output_dir, "pct_imp_",
-                   years[1], "_to_", tail(years, 1),
-                   "_cached.rda"))
+                   years[1], "_to_", tail(years, 1), ".rda"))
 
 cat("\n=====================================\n")
 cat("COMPLETE\n")
