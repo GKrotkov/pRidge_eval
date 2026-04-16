@@ -176,7 +176,6 @@ load_year_data <- function(year) {
 ##############
 
 years <- setdiff(2016:2025, 2020:2021)
-years <- 2016
 
 cat("=====================================\n")
 cat("PRIDGE vs EPA COMPARISON (LOCAL DATA)\n")
