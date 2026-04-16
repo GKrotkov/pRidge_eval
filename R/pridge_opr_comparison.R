@@ -56,6 +56,8 @@ cv_fold <- function(fold, fold_ids, matches, priors){
 # Selecting a default of k = 4 to reduce the chance of a singular matrix and
 # for computational cost
 pridge_opr_pct_improvement <- function(event_key, k = 4){
+    # Setting seed here so it takes hold inside the parallelized runs
+    set.seed(449)
     # Collect required data
     matches <- event_matches(event_key, match_type = "quals")
     epa <- team_events_sb(event = event_key)
