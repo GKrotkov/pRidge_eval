@@ -1,4 +1,4 @@
-# pridge_opr_comparison_local.R
+# pridge_opr_comparison.R
 # Computing Prior Ridge percent improvement over OPR in terms of nested CV MSE
 # Uses locally cached data from data/raw/ instead of API calls
 

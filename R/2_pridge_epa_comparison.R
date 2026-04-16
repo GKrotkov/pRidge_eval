@@ -1,4 +1,4 @@
-# pridge_epa_comparison_local.R
+# pridge_epa_comparison.R
 # Compare EPA to prior ridge using locally cached data
 # Uses data from data/raw/ instead of Statbotics API calls
 
