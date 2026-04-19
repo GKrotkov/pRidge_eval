@@ -115,7 +115,7 @@ load_year_data <- function(year) {
 #### Data ####
 ##############
 
-years <- setdiff(2016:2025, 2020:2021)
+years <- setdiff(2016:2026, 2020:2021)
 
 cat("=====================================\n")
 cat("PRIDGE vs OPR COMPARISON (LOCAL DATA)\n")
