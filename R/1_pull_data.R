@@ -201,7 +201,8 @@ overall_time <- overall_end - overall_start
 cat("\n=====================================\n")
 cat("COMPLETE\n")
 cat("=====================================\n")
-cat("Total execution time:", round(overall_time, 2), attr(overall_time, "units"), "\n")
+cat("Total execution time:", round(overall_time, 2),
+    attr(overall_time, "units"), "\n")
 cat("Data stored in:", data_dir, "\n")
 
 # Print summary of all stored files
