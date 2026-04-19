@@ -8,7 +8,7 @@ library(ggbeeswarm)
 
 rm(list = ls())
 
-load("data/pridge_vs_opr/pct_imp_combined.rda")
+load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
 
 result <- result |>
     filter(year >= 2016)
@@ -47,7 +47,7 @@ ggsave("output/pridge_vs_opr_byweek.png", width = 6, height = 6, units = "in")
 
 rm(list = ls())
 
-load("data/pridge_vs_epa/pct_imp_combined.rda")
+load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
 
 result <- result |>
     filter(year >= 2016)
