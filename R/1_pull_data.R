@@ -8,7 +8,7 @@ library(dplyr)
 library(purrr)
 
 # Configuration
-years <- setdiff(2016:2025, 2020:2021)  # Skip COVID years
+years <- setdiff(2016:2026, 2020:2021)  # Skip COVID years
 
 data_dir <- "data/raw/"
 
