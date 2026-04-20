@@ -7,6 +7,7 @@ library(parallel)
 
 B <- 1000000
 n_cores <- max(1, floor(detectCores() / 2))
+blair_red <- "#a7000a"
 
 ######################
 #### OPR Baseline ####
@@ -88,8 +89,16 @@ gt(bounds) |>
     tab_style(
         style = cell_borders(
             sides = c("left", "right", "bottom", "top"),
-            color = "darkred",
-            weight = px(2)
+            color = blair_red,
+            weight = px(1)
         ),
-        locations = cells_body(columns = 3:4)
+        locations = cells_body(columns = 1:4)
+    ) |>
+    tab_style(
+        style = cell_borders(
+            sides = c("t", "b"),
+            color = blair_red,
+            weight = px(3)
+        ),
+        locations = list(cells_column_labels(), cells_stubhead(), cells_title())
     )
