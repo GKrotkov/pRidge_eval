@@ -89,13 +89,15 @@ epa_lower <- c(overall_epa_bounds[1], sapply(epa_results, `[`, 1))
 epa_median <- c(overall_epa_bounds[2], sapply(epa_results, `[`, 2))
 epa_upper <- c(overall_epa_bounds[3], sapply(epa_results, `[`, 3))
 
-n_events <- c(nrow(result), result)
+n_events <- c(nrow(result), n_events)
 
 year <- c("Overall", unique(result$year)) # implicitly coerces to chr
 
-bounds_opr <- tibble(year, n_events, opr_lower, opr_median, opr_upper)
+bounds_opr <- tibble(year, n_events, lower = opr_lower,
+                     median = opr_median, upper = opr_upper)
 
-bounds_epa <- tibble(year, n_events, epa_lower, epa_median, epa_upper)
+bounds_epa <- tibble(year, n_events, lower = epa_lower,
+                     median = epa_median, upper = epa_upper)
 
 bounds_tbl <- tibble(
     `Year` = year,
