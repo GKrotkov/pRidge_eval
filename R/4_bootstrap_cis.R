@@ -14,6 +14,12 @@ blair_red <- "#a7000a"
 ######################
 
 load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+
+boot_means <- replicate(B, {
+    mean(sample(result$pct_imp, replace = TRUE), na.rm = TRUE)
+})
+overall_opr_bounds <- round(quantile(boot_means, c(0.025, 0.5, 0.975)), 2)
+
 years <- unique(result$year)
 
 start <- Sys.time()
@@ -27,13 +33,14 @@ opr_results <- parLapply(cl, years, function(yr) {
     boot_means <- replicate(B, {
         mean(sample(year_df$pct_imp, replace = TRUE), na.rm = TRUE)
     })
-    quantile(boot_means, c(0.025, 0.975))
+    quantile(boot_means, c(0.025, 0.5, 0.975))
 })
 
 stopCluster(cl)
 
 opr_lower <- sapply(opr_results, `[`, 1)
-opr_upper <- sapply(opr_results, `[`, 2)
+opr_median <- sapply(opr_results, `[`, 2)
+opr_upper <- sapply(opr_results, `[`, 3)
 
 end <- Sys.time()
 execution_time_opr <- end - start
@@ -43,6 +50,12 @@ execution_time_opr <- end - start
 ######################
 
 load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+
+boot_means <- replicate(B, {
+    mean(sample(result$pct_imp, replace = TRUE), na.rm = TRUE)
+})
+overall_epa_bounds <- round(quantile(boot_means, c(0.025, 0.5, 0.975)), 2)
+
 years <- unique(result$year)
 
 start <- Sys.time()
@@ -56,13 +69,14 @@ epa_results <- parLapply(cl, years, function(yr) {
     boot_means <- replicate(B, {
         mean(sample(year_df$pct_imp, replace = TRUE), na.rm = TRUE)
     })
-    quantile(boot_means, c(0.025, 0.975))
+    quantile(boot_means, c(0.025, 0.5, 0.975))
 })
 
 stopCluster(cl)
 
 epa_lower <- sapply(epa_results, `[`, 1)
-epa_upper <- sapply(epa_results, `[`, 2)
+epa_median <- sapply(epa_results, `[`, 2)
+epa_upper <- sapply(epa_results, `[`, 3)
 
 end <- Sys.time()
 execution_time_epa <- end - start
@@ -79,26 +93,39 @@ n_events <- result |>
 bounds <- tibble(
     `Year` = years,
     `# Events` = n_events,
-    `OPR Baseline` = glue("({round(opr_lower, 1)}, {round(opr_upper, 1)})"),
-    `EPA Baseline` = glue("({round(epa_lower, 1)}, {round(epa_upper, 1)})")
+    `OPR Baseline` = glue("({round(opr_lower, 1)}%, {round(opr_median, 1)}%, {round(opr_upper, 1)}%)"),
+    `EPA Baseline` = glue("({round(epa_lower, 1)}%, {round(epa_median, 1)}%, {round(epa_upper, 1)}%)")
 )
 
-gt(bounds) |>
-    tab_header(title = "pRidge mean % improvement against baseline",
-               subtitle = "Bootstrap 95% CIs, 1M replications") |>
+bounds_tab <- gt(bounds) |>
+    tab_header(title = "pRidge Mean % Improvement against Baseline",
+               subtitle = "Bootstrap 95% CIs (2.5th, 50th, 97.5th)") |>
     tab_style(
         style = cell_borders(
             sides = c("left", "right", "bottom", "top"),
-            color = blair_red,
-            weight = px(1)
+            color = "black",
+            weight = px(2)
         ),
         locations = cells_body(columns = 1:4)
     ) |>
     tab_style(
         style = cell_borders(
-            sides = c("t", "b"),
+            sides = c("t"),
             color = blair_red,
+            weight = px(4)
+        ),
+        locations = list(cells_title())
+    ) |>
+    tab_style(
+        style = cell_borders(
+            sides = c("t", "b", "l", "r"),
+            color = "black",
             weight = px(3)
         ),
-        locations = list(cells_column_labels(), cells_stubhead(), cells_title())
+        locations = list(cells_column_labels())
     )
+
+gtsave(bounds_tab, "output/bootstrap_cis.png")
+
+save(overall_opr_bounds, overall_epa_bounds, bounds, opr_results, epa_results,
+     file = "data/bootstrap_results.rda")
