@@ -7,20 +7,18 @@ library(parallel)
 
 B <- 1000000
 n_cores <- max(1, floor(detectCores() / 2))
-blair_red <- "#a7000a"
 
 ######################
 #### OPR Baseline ####
 ######################
 
 load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+years <- unique(result$year)
 
 boot_means <- replicate(B, {
     mean(sample(result$pct_imp, replace = TRUE), na.rm = TRUE)
 })
 overall_opr_bounds <- round(quantile(boot_means, c(0.025, 0.5, 0.975)), 2)
-
-years <- unique(result$year)
 
 start <- Sys.time()
 
@@ -37,10 +35,6 @@ opr_results <- parLapply(cl, years, function(yr) {
 })
 
 stopCluster(cl)
-
-opr_lower <- sapply(opr_results, `[`, 1)
-opr_median <- sapply(opr_results, `[`, 2)
-opr_upper <- sapply(opr_results, `[`, 3)
 
 end <- Sys.time()
 execution_time_opr <- end - start
@@ -74,58 +68,41 @@ epa_results <- parLapply(cl, years, function(yr) {
 
 stopCluster(cl)
 
-epa_lower <- sapply(epa_results, `[`, 1)
-epa_median <- sapply(epa_results, `[`, 2)
-epa_upper <- sapply(epa_results, `[`, 3)
-
 end <- Sys.time()
 execution_time_epa <- end - start
 
-#############
-#### Viz ####
-#############
+####################
+#### Tabulation ####
+####################
 
 n_events <- result |>
     group_by(year) |>
     summarize(count = n()) |>
     pull(count)
 
-bounds <- tibble(
-    `Year` = years,
+# attach the overall bounds to the front of the results
+opr_lower <- c(overall_opr_bounds[1], sapply(opr_results, `[`, 1))
+opr_median <- c(overall_opr_bounds[2], sapply(opr_results, `[`, 2))
+opr_upper <- c(overall_opr_bounds[3], sapply(opr_results, `[`, 3))
+
+epa_lower <- c(overall_epa_bounds[1], sapply(epa_results, `[`, 1))
+epa_median <- c(overall_epa_bounds[2], sapply(epa_results, `[`, 2))
+epa_upper <- c(overall_epa_bounds[3], sapply(epa_results, `[`, 3))
+
+n_events <- c(nrow(result), result)
+
+year <- c("Overall", unique(result$year)) # implicitly coerces to chr
+
+bounds_opr <- tibble(year, n_events, opr_lower, opr_median, opr_upper)
+
+bounds_epa <- tibble(year, n_events, epa_lower, epa_median, epa_upper)
+
+bounds_tbl <- tibble(
+    `Year` = year,
     `# Events` = n_events,
     `OPR Baseline` = glue("({round(opr_lower, 1)}%, {round(opr_median, 1)}%, {round(opr_upper, 1)}%)"),
     `EPA Baseline` = glue("({round(epa_lower, 1)}%, {round(epa_median, 1)}%, {round(epa_upper, 1)}%)")
 )
 
-bounds_tab <- gt(bounds) |>
-    tab_header(title = "pRidge Mean % Improvement against Baseline",
-               subtitle = "Bootstrap 95% CIs (2.5th, 50th, 97.5th)") |>
-    tab_style(
-        style = cell_borders(
-            sides = c("left", "right", "bottom", "top"),
-            color = "black",
-            weight = px(2)
-        ),
-        locations = cells_body(columns = 1:4)
-    ) |>
-    tab_style(
-        style = cell_borders(
-            sides = c("t"),
-            color = blair_red,
-            weight = px(4)
-        ),
-        locations = list(cells_title())
-    ) |>
-    tab_style(
-        style = cell_borders(
-            sides = c("t", "b", "l", "r"),
-            color = "black",
-            weight = px(3)
-        ),
-        locations = list(cells_column_labels())
-    )
-
-gtsave(bounds_tab, "output/bootstrap_cis.png")
-
-save(overall_opr_bounds, overall_epa_bounds, bounds, opr_results, epa_results,
+save(bounds_opr, bounds_epa, bounds_tbl,
      file = "data/bootstrap_results.rda")
