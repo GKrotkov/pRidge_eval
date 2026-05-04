@@ -1,5 +1,7 @@
 # pridge_epa_comparison.R
 # Compare EPA to prior ridge using locally cached data
+# Uses the next-match-prediction framework to make a fair comparison between
+# Elo ratings and regression methods like OPR/pRidge
 # Uses data from data/raw/ instead of Statbotics API calls
 # Last update: 5/3/2026
 
