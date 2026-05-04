@@ -94,8 +94,9 @@ load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
 opr_acc <- result |>
     group_by(year) |>
     summarize(
-        `OPR Accuracy` = mean(opr_acc, na.rm = TRUE),
-        `pRidge Accuracy` = mean(pridge_acc, na.rm = TRUE)
+        n = n(),
+        `OPR` = mean(opr_acc, na.rm = TRUE),
+        `pRidge` = mean(pridge_acc, na.rm = TRUE)
     ) |>
     scoutR:::round_numerics(digits = 4)
 
@@ -104,38 +105,50 @@ load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
 stitch <- result |>
     group_by(year) |>
     summarize(
-        `EPA Accuracy` = mean(epa_acc, na.rm = TRUE)
+        `EPA` = mean(epa_acc, na.rm = TRUE)
     ) |>
     scoutR:::round_numerics(digits = 4)
 
 viz <- merge(opr_acc, stitch, by = "year") |>
-    select(Year = year, `OPR Accuracy`, `EPA Accuracy`, `pRidge Accuracy`)
+    select(Year = year, `# Events` = n, `OPR`, `EPA`, `pRidge`)
 
-acc_cols <- c("OPR Accuracy", "EPA Accuracy", "pRidge Accuracy")
+acc_cols <- c("OPR", "EPA", "pRidge")
 
 # Problem currently: this isn't comparison apples to apples; EPA is
 # next-match-prediction while OPR and pRidge are cross validated
+# Pre-compute weighted means
+w <- viz$`# Events`
+
+weighted_means <- list(
+    Overall ~ sum(. * w) / sum(w)
+)
 
 gt(viz) |>
-    fmt_percent(columns = 2:4) |>
+    tab_header(title = "pRidge accuracy comparisons") |>
+    fmt_percent(columns = 3:5) |>
     tab_style(
         style = cell_text(weight = "bold"),
         locations = cells_body(
-            columns = 2,
+            columns = 3,
             rows = apply(viz[acc_cols], 1, which.max) == 1
         )
     ) |>
     tab_style(
         style = cell_text(weight = "bold"),
         locations = cells_body(
-            columns = 3,
+            columns = 4,
             rows = apply(viz[acc_cols], 1, which.max) == 2
         )
     ) |>
     tab_style(
         style = cell_text(weight = "bold"),
         locations = cells_body(
-            columns = 4,
+            columns = 5,
             rows = apply(viz[acc_cols], 1, which.max) == 3
         )
+    ) |>
+    grand_summary_rows(
+        columns = 3:5,
+        fns = weighted_means,
+        ~ fmt_percent(.)
     )
