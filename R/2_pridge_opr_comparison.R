@@ -1,6 +1,7 @@
 # pridge_opr_comparison.R
 # Computing Prior Ridge percent improvement over OPR in terms of nested CV MSE
-# Uses locally cached data from data/raw/ instead of API calls
+# Uses locally cached data rather than live API calls
+# Last update: 5/3/2026
 
 rm(list = ls())
 library(scoutR)
@@ -18,6 +19,16 @@ coefs_mse <- function(design, response, coefs){
     return(mean(error ^ 2))
 }
 
+# given a numeric vector of coefficients, compute the winner prediction accuracy
+# on the test set. Assumes response and design rows are ordered blue then red.
+coefs_acc <- function(design, response, coefs){
+    n <- nrow(design) / 2
+    preds <- drop(design %*% coefs)
+    correct <- (preds[1:n] > preds[(n + 1):(2 * n)]) ==
+        (response[1:n] > response[(n + 1):(2 * n)])
+    return(mean(correct))
+}
+
 # Extract priors from cached team_events data
 get_priors <- function(team_events_data){
     priors <- sapply(team_events_data, function(te){te$epa$stats$start})
@@ -25,7 +36,7 @@ get_priors <- function(team_events_data){
     return(priors)
 }
 
-# compute CV error for a given fold
+# compute CV error metrics for a given fold
 cv_fold <- function(fold, fold_ids, matches, priors){
     test  <- matches[fold_ids == fold, ]
     train <- matches[fold_ids != fold, ]
@@ -54,12 +65,20 @@ cv_fold <- function(fold, fold_ids, matches, priors){
                                          blue = train[, "blue_score"][[1]]))
     opr_mse <- coefs_mse(design_test, response_test, coef(opr_fit))
 
-    list(pridge_mse = pridge_mse, opr_mse = opr_mse, lambda_opt = lambda_opt)
+    # Compute winner prediction accuracy on test fold
+    pridge_acc <- coefs_acc(design_test, response_test, pridge_coefs)
+    opr_acc    <- coefs_acc(design_test, response_test, coef(opr_fit))
+
+    result <- list(
+        pridge_mse = pridge_mse, opr_mse = opr_mse, lambda_opt = lambda_opt,
+        pridge_acc = pridge_acc, opr_acc = opr_acc
+    )
+    return(result)
 }
 
 # Compute Pridge improvement % over OPR in terms of MSE
 # Now uses pre-loaded event data instead of API calls
-pridge_opr_pct_improvement <- function(event_key, event_data_entry){
+pridge_opr_comparison <- function(event_key, event_data_entry){
     # Setting seed here so it takes hold inside the parallelized runs
     set.seed(449)
 
@@ -69,31 +88,34 @@ pridge_opr_pct_improvement <- function(event_key, event_data_entry){
 
     # Check if data is valid
     if (is.null(matches) || is.null(team_events)) {
-        return(data.frame(pct_imp = NA, pridge_mse = NA,
-                          opr_mse = NA, lambda_opt = NA))
+        return(data.frame(pct_imp = NA, pridge_mse = NA, opr_mse = NA,
+                          lambda_opt = NA, pridge_acc = NA, opr_acc = NA))
     }
 
     # Check if we have enough matches
     if (nrow(matches) < 4) {
-        return(data.frame(pct_imp = NA, pridge_mse = NA,
-                          opr_mse = NA, lambda_opt = NA))
+        return(data.frame(pct_imp = NA, pridge_mse = NA, opr_mse = NA,
+                          lambda_opt = NA, pridge_acc = NA, opr_acc = NA))
     }
 
     priors <- get_priors(team_events)
 
-    # Assign matches to folds (k = 4 as in original)
+    # Assign matches to folds
     k <- 4
     fold_ids <- sample(rep(1:k, length.out = nrow(matches)))
 
     fold_results <- lapply(1:k, cv_fold, fold_ids, matches, priors)
 
-    # Aggregate MSEs across folds
+    # Aggregate metrics (MSE + Accuracy) across folds
     pridge_mse <- mean(sapply(fold_results, function(x) x$pridge_mse))
     opr_mse    <- mean(sapply(fold_results, function(x) x$opr_mse))
     lambda_opt <- mean(sapply(fold_results, function(x) x$lambda_opt))
+    pridge_acc <- mean(sapply(fold_results, function(x) x$pridge_acc))
+    opr_acc    <- mean(sapply(fold_results, function(x) x$opr_acc))
 
     pct_imp <- ((opr_mse - pridge_mse) / opr_mse) * 100
-    return(data.frame(pct_imp, pridge_mse, opr_mse, lambda_opt))
+    return(data.frame(pct_imp, pridge_mse, opr_mse,
+                      lambda_opt, pridge_acc, opr_acc))
 }
 
 #' Load year data from file
@@ -175,13 +197,12 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            pridge_opr_pct_improvement(key, event_data_entry)
+            pridge_opr_comparison(key, event_data_entry)
         },
         error = function(e){
-            data.frame(pct_imp = NA, pridge_mse = NA,
-                       opr_mse = NA, lambda_opt = NA)
-        }
-    )
+            data.frame(pct_imp = NA, pridge_mse = NA, opr_mse = NA,
+                       lambda_opt = NA, pridge_acc = NA, opr_acc = NA)
+        }    )
 }
 
 stopCluster(cl)

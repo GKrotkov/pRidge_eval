@@ -1,6 +1,7 @@
 # pridge_epa_comparison.R
 # Compare EPA to prior ridge using locally cached data
 # Uses data from data/raw/ instead of Statbotics API calls
+# Last update: 5/3/2026
 
 rm(list = ls())
 library(scoutR)
@@ -14,6 +15,15 @@ data_dir <- "data/raw/"
 # Given a vector of coefs and a response, compute the prediction error
 coef_error <- function(coefs, design_row, response){
     return(response - drop(sum(design_row * coefs)))
+}
+
+# Given a vector of coefs and a blue/red design row pair, return 1 if the
+# predicted winner matches the actual winner, 0 otherwise
+coef_acc <- function(coefs, blue_design_row, red_design_row,
+                     blue_response, red_response){
+    blue_pred <- drop(sum(blue_design_row * coefs))
+    red_pred  <- drop(sum(red_design_row  * coefs))
+    return(as.integer((blue_pred > red_pred) == (blue_response > red_response)))
 }
 
 # Retrieve EPA progression for all teams across the event
@@ -75,7 +85,7 @@ get_epa_coefs <- function(epa_progression, event_key, i) {
 }
 
 # Main comparison function - now uses pre-loaded event data
-pridge_epa_pct_imp <- function(event_key, event_data_entry){
+pridge_epa_comparison <- function(event_key, event_data_entry){
     # Extract required data from cached structure
     matches <- event_data_entry$matches
     team_matches <- event_data_entry$team_matches
@@ -84,6 +94,7 @@ pridge_epa_pct_imp <- function(event_key, event_data_entry){
     # Check if data is valid
     if (is.null(matches) || is.null(team_matches) || is.null(teams)) {
         return(data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
+                          pridge_acc = NA, epa_acc = NA,
                           lambda_mean = NA, lambda_median = NA, lambda_sd = NA,
                           lambda_max = NA, lambda_min = NA))
     }
@@ -106,12 +117,14 @@ pridge_epa_pct_imp <- function(event_key, event_data_entry){
     # Check if we have enough matches
     if (hi < lo) {
         return(data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
+                          pridge_acc = NA, epa_acc = NA,
                           lambda_mean = NA, lambda_median = NA, lambda_sd = NA,
                           lambda_max = NA, lambda_min = NA))
     }
 
-    result <- matrix(NA, nrow = length(lo:hi), ncol = 3)
-    colnames(result) <- c("match_number", "pridge_error", "epa_error")
+    result <- matrix(NA, nrow = length(lo:hi), ncol = 5)
+    colnames(result) <- c("match_number", "pridge_error", "epa_error",
+                          "pridge_correct", "epa_correct")
 
     lambdas <- numeric(length(lo:hi))
 
@@ -134,7 +147,13 @@ pridge_epa_pct_imp <- function(event_key, event_data_entry){
         result[idx, ] <- cbind(
             i,
             coef_error(pridge_coefs, full_design[i, ], full_response[i]),
-            coef_error(epa_coefs, full_design[i, ], full_response[i])
+            coef_error(epa_coefs, full_design[i, ], full_response[i]),
+            coef_acc(pridge_coefs, full_design[i, ],
+                     full_design[i + nrow(matches), ],
+                     full_response[i], full_response[i + nrow(matches)]),
+            coef_acc(epa_coefs,    full_design[i, ],
+                     full_design[i + nrow(matches), ],
+                     full_response[i], full_response[i + nrow(matches)])
         )
     }
 
@@ -143,14 +162,16 @@ pridge_epa_pct_imp <- function(event_key, event_data_entry){
 
     # as a pct of EPA MSE
     pct_imp <- ((epa_mse - pridge_mse) / epa_mse) * 100
+    pridge_acc <- mean(result[, "pridge_correct"])
+    epa_acc    <- mean(result[, "epa_correct"])
 
     result <- data.frame(
-        pridge_mse, epa_mse, pct_imp,
-        lambda_mean = mean(lambdas, na.rm = TRUE),
+        pridge_mse, epa_mse, pct_imp, pridge_acc, epa_acc,
+        lambda_mean   = mean(lambdas,   na.rm = TRUE),
         lambda_median = median(lambdas, na.rm = TRUE),
-        lambda_sd = sd(lambdas, na.rm = TRUE),
-        lambda_max = max(lambdas, na.rm = TRUE),
-        lambda_min = min(lambdas, na.rm = TRUE)
+        lambda_sd     = sd(lambdas,     na.rm = TRUE),
+        lambda_max    = max(lambdas,    na.rm = TRUE),
+        lambda_min    = min(lambdas,    na.rm = TRUE)
     )
 
     return(scoutR:::round_numerics(result))
@@ -235,10 +256,11 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            pridge_epa_pct_imp(key, event_data_entry)
+            pridge_epa_comparison(key, event_data_entry)
         },
         error = function(e){
             data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
+                       pridge_acc = NA, epa_acc = NA,
                        lambda_mean = NA, lambda_median = NA, lambda_sd = NA,
                        lambda_max = NA, lambda_min = NA)
         }
