@@ -1,6 +1,7 @@
 library(scoutR)
 library(tidyverse)
 library(ggbeeswarm)
+library(gt)
 
 #######################
 #### pRidge vs OPR ####
@@ -81,3 +82,62 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
          x = "Week", y = "% Improvement")
 
 ggsave("output/pridge_vs_epa_byweek.png", width = 6, height = 6, units = "in")
+
+#########################
+#### pRidge accuracy ####
+#########################
+
+rm(list = ls())
+
+load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+
+opr_acc <- result |>
+    group_by(year) |>
+    summarize(
+        `OPR Accuracy` = mean(opr_acc, na.rm = TRUE),
+        `pRidge Accuracy` = mean(pridge_acc, na.rm = TRUE)
+    ) |>
+    scoutR:::round_numerics(digits = 3)
+
+load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+
+stitch <- result |>
+    group_by(year) |>
+    summarize(
+        `EPA Accuracy` = round(mean(epa_acc, na.rm = TRUE), 3)
+    ) |>
+    scoutR:::round_numerics(digits = 3)
+
+viz <- merge(opr_acc, stitch, by = "year") |>
+    select(Year = year, `OPR Accuracy`, `EPA Accuracy`, `pRidge Accuracy`)
+
+acc_cols <- c("OPR Accuracy", "EPA Accuracy", "pRidge Accuracy")
+
+# Problem currently: this isn't comparison apples to apples; EPA is
+# next-match-prediction while OPR and pRidge are cross validated
+
+gt(viz) |>
+    fmt_percent(columns = 2:4) |>
+    tab_header(title = "pRidge is ",
+               subtitle = "Accuracy") |>
+    tab_style(
+        style = cell_text(weight = "bold"),
+        locations = cells_body(
+            columns = 2,
+            rows = apply(viz[acc_cols], 1, which.max) == 1
+        )
+    ) |>
+    tab_style(
+        style = cell_text(weight = "bold"),
+        locations = cells_body(
+            columns = 3,
+            rows = apply(viz[acc_cols], 1, which.max) == 2
+        )
+    ) |>
+    tab_style(
+        style = cell_text(weight = "bold"),
+        locations = cells_body(
+            columns = 4,
+            rows = apply(viz[acc_cols], 1, which.max) == 3
+        )
+    )
