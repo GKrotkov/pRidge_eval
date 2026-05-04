@@ -97,16 +97,16 @@ opr_acc <- result |>
         `OPR Accuracy` = mean(opr_acc, na.rm = TRUE),
         `pRidge Accuracy` = mean(pridge_acc, na.rm = TRUE)
     ) |>
-    scoutR:::round_numerics(digits = 3)
+    scoutR:::round_numerics(digits = 4)
 
 load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
 
 stitch <- result |>
     group_by(year) |>
     summarize(
-        `EPA Accuracy` = round(mean(epa_acc, na.rm = TRUE), 3)
+        `EPA Accuracy` = mean(epa_acc, na.rm = TRUE)
     ) |>
-    scoutR:::round_numerics(digits = 3)
+    scoutR:::round_numerics(digits = 4)
 
 viz <- merge(opr_acc, stitch, by = "year") |>
     select(Year = year, `OPR Accuracy`, `EPA Accuracy`, `pRidge Accuracy`)
@@ -118,8 +118,6 @@ acc_cols <- c("OPR Accuracy", "EPA Accuracy", "pRidge Accuracy")
 
 gt(viz) |>
     fmt_percent(columns = 2:4) |>
-    tab_header(title = "pRidge is ",
-               subtitle = "Accuracy") |>
     tab_style(
         style = cell_text(weight = "bold"),
         locations = cells_body(
