@@ -224,7 +224,6 @@ load_year_data <- function(year) {
 ##############
 
 years <- setdiff(2016:2026, 2020:2021)
-years <- 2016
 
 cat("=============================================\n")
 cat("NEXT MATCH PREDICTION COMPARISON (LOCAL DATA)\n")
