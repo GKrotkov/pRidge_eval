@@ -94,7 +94,7 @@ get_epa_coefs <- function(epa_progression, event_key, i) {
 }
 
 # Main comparison function - now uses pre-loaded event data
-next_match_pred_comparison <- function(event_key, event_data_entry){
+pridge_epa_comparison <- function(event_key, event_data_entry){
     # Extract required data from cached structure
     matches <- event_data_entry$matches
     team_matches <- event_data_entry$team_matches
@@ -138,6 +138,7 @@ next_match_pred_comparison <- function(event_key, event_data_entry){
     lambdas <- numeric(length(lo:hi))
 
     # fit on matches up until (i - 1), predict on match (i)
+    # note - will never fit OPR on the full dataset; this is WAI
     for (i in lo:hi){
         # matrix indexing trick to interleave red and blue matches
         # R reads matrices column-first, so we can rbind and then read them off
@@ -265,7 +266,7 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            next_match_pred_comparison(key, event_data_entry)
+            pridge_epa_comparison(key, event_data_entry)
         },
         error = function(e){
             data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
