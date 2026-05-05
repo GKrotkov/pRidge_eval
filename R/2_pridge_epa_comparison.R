@@ -53,6 +53,14 @@ get_priors <- function(epa_progression, team_list) {
     return(result)
 }
 
+# Retrieve OPR coefficients given a design matrix and a response vector
+get_opr_coefs <- function(design, response){
+    fit <- lm(response ~ 0 + design)
+    coefs <- coef(fit)
+    names(coefs) <- colnames(design)
+    return(coefs)
+}
+
 # using a relatively short grid for computational considerations
 # default to n_cores = 1 to avoid nested parallelization
 get_pridge_coefs <- function(design, response, priors, n_cores = 1){
