@@ -1,5 +1,6 @@
-# pridge_epa_comparison.R
 # Compare EPA to prior ridge using locally cached data
+# Uses the next-match-prediction framework to make a fair comparison between
+# Elo ratings and regression methods like OPR/pRidge
 # Uses data from data/raw/ instead of Statbotics API calls
 # Last update: 5/3/2026
 
@@ -93,7 +94,7 @@ get_epa_coefs <- function(epa_progression, event_key, i) {
 }
 
 # Main comparison function - now uses pre-loaded event data
-pridge_epa_comparison <- function(event_key, event_data_entry){
+next_match_pred_comparison <- function(event_key, event_data_entry){
     # Extract required data from cached structure
     matches <- event_data_entry$matches
     team_matches <- event_data_entry$team_matches
@@ -264,7 +265,7 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            pridge_epa_comparison(key, event_data_entry)
+            next_match_pred_comparison(key, event_data_entry)
         },
         error = function(e){
             data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
