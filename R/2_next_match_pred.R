@@ -104,6 +104,40 @@ blank_result <- function(){
     )
 }
 
+pred_mat <- function(lo, hi){
+    result <- matrix(NA, nrow = length(lo:hi), ncol = 7)
+    colnames(result) <- c("match_number",
+                          "pridge_error", "epa_error", "opr_error",
+                          "pridge_correct", "epa_correct", "opr_correct")
+    return(result)
+}
+
+summarize_results <- function(result, lambdas){
+    pridge_mse <- mean(result[, "pridge_error"] ^ 2)
+    epa_mse    <- mean(result[, "epa_error"]    ^ 2)
+    opr_mse    <- mean(result[, "opr_error"]    ^ 2)
+
+    # pRidge improvement as a pct of each baseline's MSE
+    pridge_epa_pct_imp <- ((epa_mse - pridge_mse) / epa_mse) * 100
+    pridge_opr_pct_imp <- ((opr_mse - pridge_mse) / opr_mse) * 100
+
+    pridge_acc <- mean(result[, "pridge_correct"])
+    epa_acc    <- mean(result[, "epa_correct"])
+    opr_acc    <- mean(result[, "opr_correct"])
+
+    result <- data.frame(
+        pridge_mse, epa_mse, opr_mse,
+        pridge_epa_pct_imp, pridge_opr_pct_imp,
+        pridge_acc, epa_acc, opr_acc,
+        lambda_mean   = mean(lambdas,   na.rm = TRUE),
+        lambda_median = median(lambdas, na.rm = TRUE),
+        lambda_sd     = sd(lambdas,     na.rm = TRUE),
+        lambda_max    = max(lambdas,    na.rm = TRUE),
+        lambda_min    = min(lambdas,    na.rm = TRUE)
+    )
+    return(scoutR:::round_numerics(result))
+}
+
 # Main comparison function - now uses pre-loaded event data
 next_match_pred <- function(event_key, event_data_entry){
     # Extract required data from cached structure
@@ -136,11 +170,7 @@ next_match_pred <- function(event_key, event_data_entry){
         return(blank_result())
     }
 
-    result <- matrix(NA, nrow = length(lo:hi), ncol = 7)
-    colnames(result) <- c("match_number",
-                          "pridge_error", "epa_error", "opr_error",
-                          "pridge_correct", "epa_correct", "opr_correct")
-
+    result <- pred_mat(lo, hi)
     lambdas <- numeric(length(lo:hi))
 
     # fit on matches up until (i - 1), predict on match (i)
@@ -178,30 +208,7 @@ next_match_pred <- function(event_key, event_data_entry){
         )
     }
 
-    pridge_mse <- mean(result[, "pridge_error"] ^ 2)
-    epa_mse    <- mean(result[, "epa_error"]    ^ 2)
-    opr_mse    <- mean(result[, "opr_error"]    ^ 2)
-
-    # pRidge improvement as a pct of each baseline's MSE
-    pridge_epa_pct_imp <- ((epa_mse - pridge_mse) / epa_mse) * 100
-    pridge_opr_pct_imp <- ((opr_mse - pridge_mse) / opr_mse) * 100
-
-    pridge_acc <- mean(result[, "pridge_correct"])
-    epa_acc    <- mean(result[, "epa_correct"])
-    opr_acc    <- mean(result[, "opr_correct"])
-
-    result <- data.frame(
-        pridge_mse, epa_mse, opr_mse,
-        pridge_epa_pct_imp, pridge_opr_pct_imp,
-        pridge_acc, epa_acc, opr_acc,
-        lambda_mean   = mean(lambdas,   na.rm = TRUE),
-        lambda_median = median(lambdas, na.rm = TRUE),
-        lambda_sd     = sd(lambdas,     na.rm = TRUE),
-        lambda_max    = max(lambdas,    na.rm = TRUE),
-        lambda_min    = min(lambdas,    na.rm = TRUE)
-    )
-
-    return(scoutR:::round_numerics(result))
+    return(summarize_results(result, lambdas))
 }
 
 #' Load year data from file
