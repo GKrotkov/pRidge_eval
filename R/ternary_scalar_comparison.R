@@ -225,6 +225,11 @@ cv_fold <- function(fold, fold_ids, design, response, priors, grid) {
     )
 }
 
+blank_result <- function() {
+    data.frame(pct_imp = NA, scalar_mse = NA,
+               ternary_mse = NA, lambda_opt = NA)
+}
+
 #' Ternary vs Scalar pRidge Comparison
 #'
 #' Runs 4-fold cross validation to compare the predictive performance of
@@ -247,11 +252,6 @@ pridge_ternary_comparison <- function(
         event_data_entry,
         grid = exp(seq(log(0.01), log(20), length.out = 100))
 ) {
-    blank_result <- function() {
-        data.frame(pct_imp = NA, scalar_mse = NA,
-                   ternary_mse = NA, lambda_opt = NA)
-    }
-
     matches     <- event_data_entry$matches
     team_events <- event_data_entry$team_events
 
@@ -283,7 +283,7 @@ pridge_ternary_comparison <- function(
     lambda_opt  <- mean(sapply(fold_results, function(x) x$lambda_scalar))
     pct_imp     <- (scalar_mse - ternary_mse) / scalar_mse * 100
 
-    data.frame(pct_imp, scalar_mse, ternary_mse, lambda_opt)
+    return(data.frame(pct_imp, scalar_mse, ternary_mse, lambda_opt))
 }
 
 data_dir <- "data/raw/"
@@ -352,8 +352,7 @@ results_list <- foreach(
             pridge_ternary_comparison(key, event_data_entry)
         },
         error = function(e){
-            data.frame(pct_imp = NA, scalar_mse = NA,
-                       ternary_mse = NA, lambda_opt = NA)
+            blank_result()
         }
     )
 }
