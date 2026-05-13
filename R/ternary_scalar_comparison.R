@@ -331,8 +331,6 @@ qualifier_events <- lapply(years, function(year) {
 cat("\nTotal events to process:", length(event_keys), "\n")
 cat("Starting analysis...\n\n")
 
-event_keys <- head(event_keys, 10) # hardcoding for testing
-
 ######################
 #### Parallelized ####
 ######################
