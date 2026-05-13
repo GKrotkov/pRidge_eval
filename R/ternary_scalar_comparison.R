@@ -331,6 +331,8 @@ qualifier_events <- lapply(years, function(year) {
 cat("\nTotal events to process:", length(event_keys), "\n")
 cat("Starting analysis...\n\n")
 
+event_keys <- head(event_keys, 10) # hardcoding for testing
+
 ######################
 #### Parallelized ####
 ######################
@@ -341,10 +343,12 @@ registerDoParallel(cl)
 
 start <- Sys.time()
 
+# Combined iterator over keys with their index for error attribution
 results_list <- foreach(
     key = event_keys,
     .packages = c("scoutR"),
     .export = c(
+        # user-defined functions
         "pridge_ternary_comparison",
         "cv_fold",
         "fit_pridge_ternary_lambda",
@@ -353,17 +357,36 @@ results_list <- foreach(
         "reoptimize_lambda_star",
         "coefs_mse",
         "get_priors",
-        "blank_result"
+        "blank_result",
+        # data objects needed by workers
+        "event_data_lookup"          # <-- THIS was the missing export
     ),
-    .errorhandling = "pass"
+    .errorhandling = "pass"          # keep "pass" so foreach doesn't swallow
 ) %dopar% {
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
+
+            # Explicit NULL guard with an informative error rather than a
+            # silent blank_result() so the logger below can distinguish
+            # "data was missing" from "computation failed"
+            if (is.null(event_data_entry)) {
+                stop("event_data_entry is NULL: key not found in event_data_lookup")
+            }
+
             pridge_ternary_comparison(key, event_data_entry)
         },
-        error = function(e){
-            blank_result()
+        error = function(e) {
+            # Build a structured error log entry and attach it as an attribute
+            # on blank_result() so the caller can separate logs from data
+            result <- blank_result()
+            attr(result, "error_log") <- list(
+                key       = key,
+                message   = conditionMessage(e),
+                class     = class(e),
+                timestamp = Sys.time()
+            )
+            result
         }
     )
 }
@@ -372,6 +395,40 @@ stopCluster(cl)
 
 finish <- Sys.time()
 execution_time <- finish - start
+
+# ── Separate clean results from errored ones ───────────────────────────────────
+
+error_log <- Filter(
+    Negate(is.null),
+    lapply(results_list, function(x) attr(x, "error_log"))
+)
+
+n_errors <- length(error_log)
+n_ok     <- length(results_list) - n_errors
+
+if (n_errors > 0) {
+    cat(sprintf(
+        "\nWARNING: %d / %d cases returned errors:\n",
+        n_errors, length(results_list)
+    ))
+    for (entry in error_log) {
+        cat(sprintf(
+            "  [%s] key='%s'  msg='%s'\n",
+            format(entry$timestamp, "%H:%M:%S"),
+            entry$key,
+            entry$message
+        ))
+    }
+} else {
+    cat("\nAll cases completed without errors.\n")
+}
+
+# Save the error log alongside results so it can be inspected later
+# (errors are stripped from results_list before bind_rows so the
+#  data-frame structure stays clean)
+for (i in seq_along(results_list)) {
+    attr(results_list[[i]], "error_log") <- NULL
+}
 
 result <- results_list |>
     bind_rows() |>
