@@ -290,7 +290,6 @@ pridge_ternary_comparison <- function(
 data_dir <- "data/raw/"
 
 years <- setdiff(2016:2026, 2020:2021)
-years <- 2026 # hardcoding for testing
 
 cat("================================================\n")
 cat("TERNARY VS SCALAR LAMBDA COMPARISON (LOCAL DATA)\n")
