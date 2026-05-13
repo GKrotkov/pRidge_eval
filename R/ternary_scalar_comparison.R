@@ -291,12 +291,12 @@ data_dir <- "data/raw/"
 years <- setdiff(2016:2026, 2020:2021)
 years <- 2026 # hardcoding for testing
 
-cat("=====================================\n")
-cat("PRIDGE vs OPR COMPARISON (LOCAL DATA)\n")
-cat("=====================================\n")
+cat("================================================\n")
+cat("TERNARY VS SCALAR LAMBDA COMPARISON (LOCAL DATA)\n")
+cat("================================================\n")
 cat("Loading cached data from:", data_dir, "\n")
 cat("Years to process:", paste(years, collapse = ", "), "\n")
-cat("=====================================\n\n")
+cat("================================================\n")
 
 # Load all year data
 all_year_data <- list()
@@ -344,6 +344,17 @@ start <- Sys.time()
 results_list <- foreach(
     key = event_keys,
     .packages = c("scoutR"),
+    .export = c(
+        "pridge_ternary_comparison",
+        "cv_fold",
+        "fit_pridge_ternary_lambda",
+        "ternary_descent_pass",
+        "ternary_loocv",
+        "reoptimize_lambda_star",
+        "coefs_mse",
+        "get_priors",
+        "blank_result"
+    ),
     .errorhandling = "pass"
 ) %dopar% {
     tryCatch(
@@ -368,3 +379,23 @@ result <- results_list |>
     full_join(qualifier_events, by = "key") |>
     select(key, year, week, pct_imp, scalar_mse,
            lambda_opt, ternary_mse, everything())
+
+# Save results
+output_dir <- "data/ternary_vs_scalar/"
+if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+}
+
+save(result, execution_time, n_cores,
+     file = paste0(output_dir, "pct_imp_",
+                   years[1], "_to_", tail(years, 1), ".rda"))
+
+cat("\n=====================================\n")
+cat("COMPLETE\n")
+cat("=====================================\n")
+cat("Execution time:", round(execution_time, 2),
+    attr(execution_time, "units"), "\n")
+cat("Events processed:", nrow(result), "\n")
+cat("Events with valid results:", sum(!is.na(result$pct_imp)), "\n")
+cat("Results saved to:", output_dir, "\n")
+cat("=====================================\n")
