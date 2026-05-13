@@ -105,7 +105,7 @@ reoptimize_lambda_star <- function(X, y, beta_0, lambda_vec,
 fit_pridge_ternary_lambda <- function(
         X, y, beta_0,
         grid = exp(seq(log(0.01), log(20), length.out = 100)),
-        n_cores = NULL,
+        n_cores = 1,
         max_iter = 10,
         tol = 1e-4,
         verbose = TRUE
@@ -141,6 +141,7 @@ fit_pridge_ternary_lambda <- function(
             X, y, beta_0, lambda_vec, options, option_names, current_mse, verbose
         )
         lambda_vec  <- pass$lambda_vec
+        prev_mse <- current_mse
         current_mse <- pass$current_mse
         mse_history[iter] <- current_mse
         if (verbose) cat(sprintf(
@@ -151,7 +152,7 @@ fit_pridge_ternary_lambda <- function(
             if (verbose) cat("Converged: no teams changed assignment.\n")
             break
         }
-        if ((pass$current_mse - current_mse) < tol) {
+        if ((prev_mse - current_mse) < tol) {
             if (verbose) cat(sprintf(
                 "Converged: MSE improvement below tolerance (%.6f).\n", tol
             ))
@@ -211,7 +212,7 @@ cv_fold <- function(fold, fold_ids, design, response, priors, grid) {
     # ── Ternary pRidge ─────────────────────────────────────────────────────────
     ternary_fit   <- fit_pridge_ternary_lambda(
         X = design_train, y = response_train, beta_0 = priors,
-        grid = grid, verbose = FALSE
+        grid = grid, n_cores = 1, verbose = FALSE
     )
     ternary_coefs <- prior_ridge(
         design_train, response_train, ternary_fit$lambda_vec, priors
@@ -355,9 +356,7 @@ results_list <- foreach(
         "reoptimize_lambda_star",
         "coefs_mse",
         "get_priors",
-        "blank_result",
-        # data objects needed by workers
-        "event_data_lookup"
+        "blank_result"
     ),
     .errorhandling = "pass"
 ) %dopar% {
