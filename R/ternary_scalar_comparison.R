@@ -359,9 +359,9 @@ results_list <- foreach(
         "get_priors",
         "blank_result",
         # data objects needed by workers
-        "event_data_lookup"          # <-- THIS was the missing export
+        "event_data_lookup"
     ),
-    .errorhandling = "pass"          # keep "pass" so foreach doesn't swallow
+    .errorhandling = "pass"
 ) %dopar% {
     tryCatch(
         {
