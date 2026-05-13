@@ -443,7 +443,7 @@ if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
 }
 
-save(result, execution_time, n_cores,
+save(result, execution_time, n_cores, error_log,
      file = paste0(output_dir, "pct_imp_",
                    years[1], "_to_", tail(years, 1), ".rda"))
 
