@@ -44,13 +44,15 @@ cv_fold <- function(fold, fold_ids, matches, priors){
     response_test <- c(test$blue_score, test$red_score)
     design <- as.matrix(lineup_design_matrix(matches))
     design_train <- design[fold_ids != fold, ]
+    # drop priors for registered teams that never played, matching by team
+    priors <- priors[as.character(scoutR:::id2int(colnames(design)))]
     design_test <- design[fold_ids == fold, ]
 
     # select lambda via LOOCV on the training fold
     # use n_cores = 1 to avoid nested parallelization
     pridge_cv <- scoutR::pridge_lambda_cv(
         design_train, response_train, priors,
-        grid = seq(0, 20, length.out = 100), plot_mses = FALSE, n_cores = 1
+        grid = exp(seq(log(0.01), log(20), length.out = 100)), plot_mses = FALSE, n_cores = 1
     )
     lambda_opt <- as.numeric(names(which.min(pridge_cv)))
 
