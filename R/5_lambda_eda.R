@@ -1,14 +1,19 @@
 # EDA on the chosen lambda values for prior ridge
 rm(list = ls())
 library(tidyverse)
+source("R/utils.R")
 
-load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+# Configuration
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
+
+load(results_path("opr", score_type, 2016:2026))
 vsopr <- result |>
     select(key, year, week, pct_imp_opr = pct_imp, pridge_mse_opr = pridge_mse,
            lambda_opt_opr = lambda_opt, opr_mse) |>
     scoutR:::round_numerics()
 
-load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+load(results_path("epa", score_type, 2016:2026))
 vsepa <- result |>
     select(key, year, week, pct_imp_epa = pct_imp, pridge_mse_epa = pridge_mse,
            epa_mse, lambda_mean_epa = lambda_mean,

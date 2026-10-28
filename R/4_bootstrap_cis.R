@@ -4,6 +4,11 @@ library(tidyverse)
 library(gt)
 library(glue)
 library(parallel)
+source("R/utils.R")
+
+# Configuration
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
 
 set.seed(449)
 
@@ -14,7 +19,7 @@ n_cores <- max(1, floor(detectCores() / 2))
 #### OPR Baseline ####
 ######################
 
-load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+load(results_path("opr", score_type, 2016:2026))
 years <- unique(result$year)
 
 boot_means <- replicate(B, {
@@ -45,7 +50,7 @@ execution_time_opr <- end - start
 #### EPA Baseline ####
 ######################
 
-load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+load(results_path("epa", score_type, 2016:2026))
 
 boot_means <- replicate(B, {
     mean(sample(result$pct_imp, replace = TRUE), na.rm = TRUE)
@@ -108,5 +113,5 @@ bounds_tbl <- tibble(
     `EPA Baseline` = glue("({round(epa_lower, 1)}%, {round(epa_median, 1)}%, {round(epa_upper, 1)}%)")
 )
 
-save(bounds_opr, bounds_epa, bounds_tbl,
-     file = "data/bootstrap_results.rda")
+save(bounds_opr, bounds_epa, bounds_tbl, score_type,
+     file = paste0("data/bootstrap_results_", score_type, ".rda"))

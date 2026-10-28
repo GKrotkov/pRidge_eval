@@ -298,14 +298,12 @@ result <- results_list |>
     select(key, year, week, pct_imp, pridge_mse, epa_mse, everything())
 
 # Save results
-output_dir <- paste0("data/pridge_vs_epa_", score_type, "/")
-if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
+output_file <- results_path("epa", score_type, years)
+if (!dir.exists(dirname(output_file))) {
+    dir.create(dirname(output_file), recursive = TRUE)
 }
 
-save(result, execution_time, n_cores, score_type,
-     file = paste0(output_dir, "pct_imp_",
-                   years[1], "_to_", tail(years, 1), ".rda"))
+save(result, execution_time, n_cores, score_type, file = output_file)
 
 cat("\n=====================================\n")
 cat("COMPLETE\n")
@@ -314,5 +312,5 @@ cat("Execution time:", round(execution_time, 2),
     attr(execution_time, "units"), "\n")
 cat("Events processed:", nrow(result), "\n")
 cat("Events with valid results:", sum(!is.na(result$pct_imp)), "\n")
-cat("Results saved to:", output_dir, "\n")
+cat("Results saved to:", output_file, "\n")
 cat("=====================================\n")

@@ -5,8 +5,13 @@ library(tidyverse)
 library(gt)
 library(forestplot)
 
+# Configuration
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
+score_label <- if (score_type == "score") "official score" else "no-foul score"
+
 blair_red <- "#a7000a"
-load("data/bootstrap_results.rda")
+load(paste0("data/bootstrap_results_", score_type, ".rda"))
 
 ###############
 #### Table ####
@@ -14,7 +19,8 @@ load("data/bootstrap_results.rda")
 
 bounds_gt <- gt(bounds_tbl) |>
     tab_header(title = "pRidge Mean % Improvement against Baseline",
-               subtitle = "Bootstrap 95% CIs (2.5th, 50th, 97.5th)") |>
+               subtitle = paste0("Bootstrap 95% CIs (2.5th, 50th, 97.5th), ",
+                                 score_label)) |>
     tab_style(
         style = cell_borders(
             sides = c("left", "right", "bottom", "top"),
@@ -40,7 +46,7 @@ bounds_gt <- gt(bounds_tbl) |>
         locations = list(cells_column_labels())
     )
 
-gtsave(bounds_gt, "output/bootstrap_cis.png")
+gtsave(bounds_gt, paste0("output/bootstrap_cis_", score_type, ".png"))
 
 #####################
 #### Forest Plot ####
@@ -62,7 +68,7 @@ viz |>
                boxsize = 0.2,
                # cutting out the high outlier 2018 performance for visibility
                clip = c(-5, 50),
-               xlab = "% improvement over baseline",
+               xlab = paste0("% improvement over baseline (", score_label, ")"),
                txt_gp = fpTxtGp(
                    xlab = gpar(fontsize = 18),
                    ticks = gpar(fontsize = 18)

@@ -3,13 +3,19 @@ library(tidyverse)
 library(ggbeeswarm)
 library(gt)
 
+rm(list = ls())
+source("R/utils.R")
+
+# Configuration
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
+score_label <- if (score_type == "score") "official score" else "no-foul score"
+
 #######################
 #### pRidge vs OPR ####
 #######################
 
-rm(list = ls())
-
-load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+load(results_path("opr", score_type, 2016:2026))
 
 result <- result |>
     filter(year >= 2016)
@@ -23,10 +29,11 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
     scale_y_continuous(labels = scales::percent) +
     scale_x_discrete(limits = rev) +
     labs(title = "pRidge % improvement over OPR by year",
-         subtitle = "By cross-validated MSE per event",
+         subtitle = paste0("By cross-validated MSE per event (", score_label, ")"),
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_vs_opr_byyear.png", width = 6, height = 6, units = "in")
+ggsave(paste0("output/pridge_vs_opr_byyear_", score_type, ".png"),
+       width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
     geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
@@ -37,18 +44,17 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
     scale_y_continuous(labels = scales::percent) +
     scale_x_discrete(limits = rev) +
     labs(title = "pRidge % improvement over OPR by competition week",
-         subtitle = "By cross-validated MSE per event",
+         subtitle = paste0("By cross-validated MSE per event (", score_label, ")"),
          x = "Week", y = "% Improvement")
 
-ggsave("output/pridge_vs_opr_byweek.png", width = 6, height = 6, units = "in")
+ggsave(paste0("output/pridge_vs_opr_byweek_", score_type, ".png"),
+       width = 6, height = 6, units = "in")
 
 #######################
 #### pRidge vs EPA ####
 #######################
 
-rm(list = ls())
-
-load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+load(results_path("epa", score_type, 2016:2026))
 
 result <- result |>
     filter(year >= 2016)
@@ -63,10 +69,12 @@ ggplot(result, aes(x = as.character(year), y = (pct_imp / 100))) +
                        labels = scales::percent) +
     scale_x_discrete(limits = rev) +
     labs(title = "pRidge % improvement over EPA by year",
-         subtitle = "By next-match-prediction MSE per event",
+         subtitle = paste0("By next-match-prediction MSE per event (",
+                           score_label, ")"),
          x = "Year", y = "% Improvement")
 
-ggsave("output/pridge_vs_epa_byyear.png", width = 6, height = 6, units = "in")
+ggsave(paste0("output/pridge_vs_epa_byyear_", score_type, ".png"),
+       width = 6, height = 6, units = "in")
 
 ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
     geom_boxplot(width = 0.6, alpha = 0.8, fill = "darkred") +
@@ -78,18 +86,18 @@ ggplot(result, aes(x = as.character(week + 1), y = (pct_imp / 100))) +
                        labels = scales::percent) +
     scale_x_discrete(limits = rev) +
     labs(title = "pRidge % improvement over EPA by competition week",
-         subtitle = "By next-match-prediction MSE per event",
+         subtitle = paste0("By next-match-prediction MSE per event (",
+                           score_label, ")"),
          x = "Week", y = "% Improvement")
 
-ggsave("output/pridge_vs_epa_byweek.png", width = 6, height = 6, units = "in")
+ggsave(paste0("output/pridge_vs_epa_byweek_", score_type, ".png"),
+       width = 6, height = 6, units = "in")
 
 #########################
 #### pRidge accuracy ####
 #########################
 
-rm(list = ls())
-
-load("data/pridge_vs_opr/pct_imp_2016_to_2026.rda")
+load(results_path("opr", score_type, 2016:2026))
 
 opr_acc <- result |>
     group_by(year) |>
@@ -100,7 +108,7 @@ opr_acc <- result |>
     ) |>
     scoutR:::round_numerics(digits = 4)
 
-load("data/pridge_vs_epa/pct_imp_2016_to_2026.rda")
+load(results_path("epa", score_type, 2016:2026))
 
 stitch <- result |>
     group_by(year) |>
@@ -124,7 +132,8 @@ weighted_means <- list(
 )
 
 gt(viz) |>
-    tab_header(title = "pRidge accuracy comparisons") |>
+    tab_header(title = "pRidge accuracy comparisons",
+               subtitle = paste0("Response: ", score_label)) |>
     fmt_percent(columns = 3:5) |>
     tab_style(
         style = cell_text(weight = "bold"),
