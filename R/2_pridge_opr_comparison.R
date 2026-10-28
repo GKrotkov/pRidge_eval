@@ -8,9 +8,12 @@ library(scoutR)
 library(foreach)
 library(doParallel)
 library(dplyr)
+source("R/utils.R")
 
 # Configuration
 data_dir <- "data/raw/"
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
 
 # given a numeric vector of coefficients, compute the mse on the test set
 coefs_mse <- function(design, response, coefs){
@@ -37,11 +40,11 @@ get_priors <- function(team_events_data){
 }
 
 # compute CV error metrics for a given fold
-cv_fold <- function(fold, fold_ids, matches, priors){
+cv_fold <- function(fold, fold_ids, matches, priors, score_type){
     test  <- matches[fold_ids == fold, ]
     train <- matches[fold_ids != fold, ]
-    response_train <- c(train$blue_score, train$red_score)
-    response_test <- c(test$blue_score, test$red_score)
+    response_train <- stacked_response(train, score_type)
+    response_test  <- stacked_response(test,  score_type)
     design <- as.matrix(lineup_design_matrix(matches))
     design_train <- design[fold_ids != fold, ]
     # drop priors for registered teams that never played, matching by team
@@ -63,8 +66,11 @@ cv_fold <- function(fold, fold_ids, matches, priors){
     pridge_mse <- coefs_mse(design_test, response_test, pridge_coefs)
 
     # Fit OPR on training fold and evaluate on test fold
-    opr_fit <- fit_lineup_lm(train, list(red = train[, "red_score"][[1]],
-                                         blue = train[, "blue_score"][[1]]))
+    opr_fit <- fit_lineup_lm(
+        train, list(red  = train[[paste0("red_",  score_type)]],
+                    blue = train[[paste0("blue_", score_type)]])
+    )
+
     opr_mse <- coefs_mse(design_test, response_test, coef(opr_fit))
 
     # Compute winner prediction accuracy on test fold
@@ -80,7 +86,7 @@ cv_fold <- function(fold, fold_ids, matches, priors){
 
 # Compute Pridge improvement % over OPR in terms of MSE
 # Now uses pre-loaded event data instead of API calls
-pridge_opr_comparison <- function(event_key, event_data_entry){
+pridge_opr_comparison <- function(event_key, event_data_entry, score_type){
     # Setting seed here so it takes hold inside the parallelized runs
     set.seed(449)
 
@@ -106,7 +112,7 @@ pridge_opr_comparison <- function(event_key, event_data_entry){
     k <- 4
     fold_ids <- sample(rep(1:k, length.out = nrow(matches)))
 
-    fold_results <- lapply(1:k, cv_fold, fold_ids, matches, priors)
+    fold_results <- lapply(1:k, cv_fold, fold_ids, matches, priors, score_type)
 
     # Aggregate metrics (MSE + Accuracy) across folds
     pridge_mse <- mean(sapply(fold_results, function(x) x$pridge_mse))
@@ -168,7 +174,9 @@ for (year in years) {
 
     # Add to lookup
     for (key in year_event_keys) {
-        event_data_lookup[[key]] <- year_data$event_data[[key]]
+        entry <- year_data$event_data[[key]]
+        entry$matches <- add_no_foul_scores(entry$matches)
+        event_data_lookup[[key]] <- entry
     }
 }
 
@@ -199,7 +207,7 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            pridge_opr_comparison(key, event_data_entry)
+            pridge_opr_comparison(key, event_data_entry, score_type)
         },
         error = function(e){
             data.frame(pct_imp = NA, pridge_mse = NA, opr_mse = NA,
@@ -220,12 +228,12 @@ result <- results_list |>
            lambda_opt, opr_mse, everything())
 
 # Save results
-output_dir <- "data/pridge_vs_opr/"
+output_dir <- paste0("data/pridge_vs_opr_", score_type, "/")
 if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
 }
 
-save(result, execution_time, n_cores,
+save(result, execution_time, n_cores, score_type,
      file = paste0(output_dir, "pct_imp_",
                    years[1], "_to_", tail(years, 1), ".rda"))
 

@@ -9,9 +9,12 @@ library(scoutR)
 library(tidyverse)
 library(parallel)
 library(doParallel)
+source("R/utils.R")
 
 # Configuration
 data_dir <- "data/raw/"
+score_type <- "no_foul_score"   # "score" for penalized scores
+stopifnot(score_type %in% c("score", "no_foul_score"))
 
 # Given a vector of coefs and a response, compute the prediction error
 coef_error <- function(coefs, design_row, response){
@@ -93,8 +96,8 @@ get_epa_coefs <- function(epa_progression, event_key, i) {
     return(result)
 }
 
-# Main comparison function - now uses pre-loaded event data
-pridge_epa_comparison <- function(event_key, event_data_entry){
+# Main comparison function w/pre-loaded event data
+pridge_epa_comparison <- function(event_key, event_data_entry, score_type){
     # Extract required data from cached structure
     matches <- event_data_entry$matches
     team_matches <- event_data_entry$team_matches
@@ -113,7 +116,7 @@ pridge_epa_comparison <- function(event_key, event_data_entry){
     epa_progression <- get_epa_progression(team_matches, event_key)
 
     full_design <- as.matrix(lineup_design_matrix(matches))
-    full_response <- c(matches$blue_score, matches$red_score)
+    full_response <- stacked_response(matches, score_type)
 
     priors <- get_priors(epa_progression, team_list)
 
@@ -235,7 +238,9 @@ for (year in years) {
 
     # Add to lookup
     for (key in year_event_keys) {
-        event_data_lookup[[key]] <- year_data$event_data[[key]]
+        entry <- year_data$event_data[[key]]
+        entry$matches <- add_no_foul_scores(entry$matches)
+        event_data_lookup[[key]] <- entry
     }
 }
 
@@ -266,7 +271,7 @@ results_list <- foreach(
     tryCatch(
         {
             event_data_entry <- event_data_lookup[[key]]
-            pridge_epa_comparison(key, event_data_entry)
+            pridge_epa_comparison(key, event_data_entry, score_type)
         },
         error = function(e){
             data.frame(pridge_mse = NA, epa_mse = NA, pct_imp = NA,
@@ -293,12 +298,12 @@ result <- results_list |>
     select(key, year, week, pct_imp, pridge_mse, epa_mse, everything())
 
 # Save results
-output_dir <- "data/pridge_vs_epa/"
+output_dir <- paste0("data/pridge_vs_epa_", score_type, "/")
 if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
 }
 
-save(result, execution_time, n_cores,
+save(result, execution_time, n_cores, score_type,
      file = paste0(output_dir, "pct_imp_",
                    years[1], "_to_", tail(years, 1), ".rda"))
 
